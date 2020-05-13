@@ -420,4 +420,96 @@ class MainModel extends Model
     }
     #================ End updateImageChapterMangaMysql ==================================
 
+    /**
+     * @author [prayugo]
+     * @create date 2020-05-11 06:26:46
+     * @modify date 2020-05-11 06:26:46
+     * @desc [getDataLastUpdateChapterManga]
+     */
+    #================  getDataLastUpdateChapterManga ==================================
+    public static function getDataLastUpdateChapterManga($params = []){
+        $code = (isset($params['code']) ? $params['code'] : '');
+        $id = (isset($params['id']) ? $params['id'] : '');
+        $id_chapter = (isset($params['id_chapter']) ? $params['id_chapter'] : '');
+        $startDate = (isset($params['start_date']) ? $params['start_date'] : '');
+        $endDate = (isset($params['end_date']) ? $params['end_date'] : '');
+        
+        $tabel_name = 'last_update_chapter';
+        ini_set('memory_limit','1024M');
+        $query = DB::connection('mysql')
+            ->table($tabel_name);
+        
+        if(!empty($code)) $query = $query->where('code', '=', $code);
+        if(!empty($id)) $query = $query->where('id', '=', $id);
+        if(!empty($id_chapter)) $query = $query->where('id_chapter', '=', $id_chapter);
+
+        if(!empty($startDate) && empty($endDate)) $query = $query->where('cron_at', '>=', $startDate);
+        if($startDate && $endDate) $query = $query->whereBetween('cron_at', [$startDate, $endDate]);
+        $query = $query->get();
+
+        $result = [];
+        if(count($query)) $result = collect($query)->map(function($x){ return (array) $x; })->toArray();
+        return $result;
+    }
+    #================ End getDataLastUpdateChapterManga ==================================
+
+    
+    /**
+     * @author [prayugo]
+     * @create date 2020-05-11 06:26:46
+     * @modify date 2020-05-11 06:26:46
+     * @desc [insertLastUpdateChapterMangaMysql]
+     */
+    #================  insertLastUpdateChapterMangaMysql ==================================
+    public static function insertLastUpdateChapterMangaMysql($data_all = [], $justInsert = FALSE){
+        $tabel_name = 'last_update_chapter';
+        $query = DB::connection('mysql')
+            ->table($tabel_name);
+        if($justInsert){
+            $query = $query->insert($data_all);
+        }else{
+            $query = $query->insertGetId($data_all);
+        }
+        $error = [];
+        $data['status'] = 200;
+        $data['message'] = 'success insert '.$tabel_name;
+        if(!$query) {
+            $data['status'] = 400;
+            $data['message'] = 'failed insert '.$tabel_name;
+            $error['msg'] = 'error insert '.$tabel_name;
+            $error['num'] = 'error num insert '.$tabel_name;
+        }
+
+        $data['error'] 	= $error;
+        if(!$justInsert) $data['id_result'] = $query;
+        return $data;
+    }
+    #================ End insertLastUpdateChapterMangaMysql ==================================
+
+    /**
+     * @author [prayugo]
+     * @create date 2020-05-11 06:26:46
+     * @modify date 2020-05-11 06:26:46
+     * @desc [updateLastUpdateChapterMangaMysql]
+     */
+    #================  updateLastUpdateChapterMangaMysql ==================================
+    public static function updateLastUpdateChapterMangaMysql($data_all = [], $conditions){
+        $tabel_name = 'last_update_chapter';
+        $query = DB::connection('mysql')
+            ->table($tabel_name);
+
+        foreach($conditions as $key => $value){
+            $query = $query->where($key, $value);
+        }
+        $query = $query->update($data_all);
+        $data['status'] = 400;
+        $data['message'] = 'failed insert '.$tabel_name;
+        if($query){
+            $data['status'] = 200;
+            $data['message'] = 'success insert '.$tabel_name;
+        }
+        return $data;
+    }
+    #================ End updateLastUpdateChapterMangaMysql ==================================
+
 }

@@ -106,8 +106,9 @@ class DetailMangaController extends Controller
             // dd($SubDetail['Chapter']);
             if($SubChapter){
                 {//Get Detail
-                    $deskripsi = ($SubDetail['Deskripsi'][0]) ? Converter::__normalizeSummary($SubDetail['Deskripsi'][0]) : '';
-                    $image = ($SubDetail['Image'][0]) ? ($SubDetail['Image'][0]) : '';
+                    
+                    $deskripsi = isset($SubDetail['Deskripsi'][0]) ? Converter::__normalizeSummary($SubDetail['Deskripsi'][0]) : '';
+                    $image = isset($SubDetail['Image'][0]) ? ($SubDetail['Image'][0]) : '';
                     $tipe = isset($SubDetail['ListDetail'][0]['Type']) ? trim($SubDetail['ListDetail'][0]['Type']) : '';
                     $status = isset($SubDetail['ListDetail'][0]['Status']) ? trim($SubDetail['ListDetail'][0]['Status']) : '';
                     $author = isset($SubDetail['ListDetail'][0]['Author']) ? explode(",",(trim(preg_replace('/\s+/','',$SubDetail['ListDetail'][0]['Author'])))) : '';

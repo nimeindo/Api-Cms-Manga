@@ -53,11 +53,12 @@ class LastUpdateChapterManga extends Controller
             }else{
                 $BASE_URL_UPDATE = $BASE_URL.$LAST_UPDATE."?page=".$PageNumber;
             }
-            return $this->LastUpdateChapterMangaScrapValue($BASE_URL, $BASE_URL_UPDATE, $awal);
+            return $this->LastUpdateChapterMangaScrapValue($BASE_URL, $BASE_URL_UPDATE,$PageNumber ,$awal);
         }
     }
+    
 
-    public function LastUpdateChapterMangaScrapValue($BASE_URL, $BASE_URL_UPDATE, $awal){
+    public function LastUpdateChapterMangaScrapValue($BASE_URL, $BASE_URL_UPDATE, $PageNumber, $awal){
         $BASE_URL_LIST = $BASE_URL_UPDATE;
         $client = new Client(['cookies' => new FileCookieJar('cookies.txt')]);
         $client->getConfig('handler')->push(CloudflareMiddleware::create());
@@ -75,13 +76,17 @@ class LastUpdateChapterManga extends Controller
                     $hrefChapter = $node->filter('div > a')->attr('href');
                     $slugChapter = str_replace('/','-',substr($hrefChapter, strrpos($hrefChapter, 'manga/' )+6));
                     $chapter    = 'Chapter '.substr($hrefChapter, strrpos($hrefChapter, '/' )+1);
+                    $getTextDiv = $node->filter('div')->text('Default text content');
+                    $subDate = substr($getTextDiv, 0, strpos($getTextDiv, ' ago'));
+                    $DateTime = explode(' ',trim(substr($subDate,-8)));
                     $chapterUpdate = [
                         'hrefDetail' => $hrefDetail,
                         'slugDetail' => $slugDetail,
                         'title'     => $title,
                         'chapter'   => $chapter,
                         'hrefChapter' => $hrefChapter,
-                        'slugChapter' => $slugChapter
+                        'slugChapter' => $slugChapter,
+                        'time' => $DateTime
                     ];
                     return $chapterUpdate;
                 });
@@ -98,13 +103,13 @@ class LastUpdateChapterManga extends Controller
                 });
                 return $listPagination;
             });
-            $MaxNumber = 0;
+            // $MaxNumber = 0;
             foreach($SubPagination[0][0] as $valueSub){
                 if(is_numeric($valueSub)){
                     $MaxNumber = $valueSub;
                 }
             }
-            // dd($SubLastUpdate);
+            // dd($MaxNumber);
             if($SubLastUpdate){
                 for($i = 0 ; $i < count($SubLastUpdate[0]); $i++){
                     $hrefDetail = isset($SubLastUpdate[0][$i]['hrefDetail']) ? $SubLastUpdate[0][$i]['hrefDetail'] : '';
@@ -113,11 +118,28 @@ class LastUpdateChapterManga extends Controller
                     $chapter = isset($SubLastUpdate[0][$i]['chapter']) ? $SubLastUpdate[0][$i]['chapter'] : '';
                     $hrefChapter = isset($SubLastUpdate[0][$i]['hrefChapter']) ? $SubLastUpdate[0][$i]['hrefChapter'] : '';
                     $slugChapter = isset($SubLastUpdate[0][$i]['slugChapter']) ? $SubLastUpdate[0][$i]['slugChapter'] : '';
+                    $countTime = isset($SubLastUpdate[0][$i]['time'][0]) ? $SubLastUpdate[0][$i]['time'][0] : 0;
+                    $countDays = isset($SubLastUpdate[0][$i]['time'][1]) ? substr($SubLastUpdate[0][$i]['time'][1],0,2) : 0;
+                    $publishDateChapter = $this->convertPublishDate($countDays, $countTime);
+                    
+                    $totalSearchPage = $MaxNumber;
+                    $pageSearch = $PageNumber;
                     $codeDetail = md5($slugDetail);
                     $paramCodeDetail['code'] = $codeDetail;
                     $codeChapter = md5($slugChapter);
-                    $paramIdListChapter['code'] = $codeChapter;
+                    $paramIdChapter['code'] = $codeChapter;
                     $detailManga = MainModel::getDataDetailManga($paramCodeDetail);
+                    $paramLastUpdate = [
+                        'total_search_page' => $totalSearchPage,
+                        'page_search' => $pageSearch,
+                        "code" => $codeChapter,
+                        'slug' => $slugChapter,
+                        'title' => $title,
+                        'status' => '',
+                        'chapter' => $chapter,
+                        'href' => $hrefChapter,
+                        'publish_date' => $publishDateChapter
+                    ];
                     if(empty($detailManga)){
                         $listDetailManga = [
                             'params' => [
@@ -129,19 +151,135 @@ class LastUpdateChapterManga extends Controller
                         $detailManga = MainModel::getDataDetailManga($paramCodeDetail);
                         $idDetailManga = (empty($detailManga)) ? 0 : $detailManga[0]['id'];
                         $idListManga = (empty($detailManga)) ? 0 : $detailManga[0]['id_list_manga'];
-                        $dataChapter = MainModel::getDataChapterManga($paramIdListChapter);
+                        $dataChapter = MainModel::getDataChapterManga($paramIdChapter);
+                        $idChapter = (empty($dataChapter)) ? 0 : $dataChapter[0]['id'];
+                        // cek jika data chapter tidak ada maka akan menginput baru
+                        if(empty($dataChapter)){
+                            $Input = array(
+                                'id_detail_manga' => $idDetailManga,
+                                'id_list_manga' => $idListManga,
+                                "code" => $codeChapter,
+                                'slug' => $slugChapter,
+                                'chapter' => $chapter,
+                                'date_publish' => $publishDateChapter,
+                                'chapter_href' => $hrefChapter,
+                                'cron_at' => Carbon::now()->format('Y-m-d H:i:s')
+                            );
+                            $LogSaveChapter [] = "Data Save - ".$slugChapter;
+                            $save = MainModel::insertChapterMangaMysql($Input);
+                            $dataChapter = MainModel::getDataChapterManga($paramIdChapter);
+                            $idChapter = (empty($dataChapter)) ? 0 : $dataChapter[0]['id'];
+                        }
+                        {//insert lats update
+                            $dataLastUpdateChapter = MainModel::getDataLastUpdateChapterManga($paramIdChapter);
+                            $LogSave [] = $this->saveLastUpdate($detailManga, $dataChapter, $dataLastUpdateChapter ,$paramLastUpdate);
+                        }
                     }else{
                         $idDetailManga = (empty($detailManga)) ? 0 : $detailManga[0]['id'];
                         $idListManga = (empty($detailManga)) ? 0 : $detailManga[0]['id_list_manga'];
-                        $dataChapter = MainModel::getDataChapterManga($paramIdListChapter);
-                        dd($dataChapter);
+                        $dataChapter = MainModel::getDataChapterManga($paramIdChapter);
+                        $idChapter = (empty($dataChapter)) ? 0 : $dataChapter[0]['id'];
+                        // cek jika data chapter tidak ada maka akan menginput baru
+                        if(empty($dataChapter)){
+                            $Input = array(
+                                'id_detail_manga' => $idDetailManga,
+                                'id_list_manga' => $idListManga,
+                                "code" => $codeChapter,
+                                'slug' => $slugChapter,
+                                'chapter' => $chapter,
+                                'date_publish' => $publishDateChapter,
+                                'chapter_href' => $hrefChapter,
+                                'cron_at' => Carbon::now()->format('Y-m-d H:i:s')
+                            );
+                            $LogSaveChapter [] = "Data Save - ".$slugChapter;
+                            $save = MainModel::insertChapterMangaMysql($Input);
+                            $dataChapter = MainModel::getDataChapterManga($paramIdChapter);
+                            $idChapter = (empty($dataChapter)) ? 0 : $dataChapter[0]['id'];
+                        }
+                        {//insert lats update
+                            $dataLastUpdateChapter = MainModel::getDataLastUpdateChapterManga($paramIdChapter);
+                            $LogSave [] = $this->saveLastUpdate($detailManga, $dataChapter, $dataLastUpdateChapter ,$paramLastUpdate);
+                        }
+                        
                     }
                 }
+                return ResponseConnected::Success("Last Update Chapter Manga", Null, $LogSave, $awal);
             }else{
-                //page not found    
+                return ResponseConnected::PageNotFound("Last Update Chapter Manga","Page Not Found.", $awal);
             }
         }else{
-            //page not found
+            return ResponseConnected::PageNotFound("Last Update Chapter Manga","Page Not Found.", $awal);
         }
+    }
+
+    public function saveLastUpdate($detailManga, $dataChapter, $dataLastUpdateChapter ,$paramLastUpdate){
+        $idDetailManga = (empty($detailManga)) ? 0 : $detailManga[0]['id'];
+        $idListManga = (empty($detailManga)) ? 0 : $detailManga[0]['id_list_manga'];
+        $idChapter = (empty($dataChapter)) ? 0 : $dataChapter[0]['id'];
+        
+        if(empty($dataLastUpdateChapter)){
+            $Input = array(
+                'id_detail_manga' => $idDetailManga,
+                'id_list_manga' => $idListManga,
+                'id_chapter' => $idChapter,
+                'total_search_page' => $paramLastUpdate['total_search_page'],
+                'page_search' => $paramLastUpdate['page_search'],
+                "code" => $paramLastUpdate['code'],
+                'slug' => $paramLastUpdate['slug'],
+                'title' => $paramLastUpdate['title'],
+                'status' => '',
+                'chapter' => $paramLastUpdate['chapter'],
+                'publish' => $paramLastUpdate['publish_date'],
+                'href' => $paramLastUpdate['href'],
+                'cron_at' => Carbon::now()->format('Y-m-d H:i:s')
+            );
+            
+            $LogSave  = "Data Save - ".$paramLastUpdate['slug'];
+            $save = MainModel::insertLastUpdateChapterMangaMysql($Input);
+        }else{
+            $conditions['id'] = $dataLastUpdateChapter[0]['id'];
+            $Update = array(
+                'id_detail_manga' => $idDetailManga,
+                'id_list_manga' => $idListManga,
+                'id_chapter' => $idChapter,
+                'total_search_page' => $paramLastUpdate['total_search_page'],
+                'page_search' => $paramLastUpdate['page_search'],
+                "code" => $paramLastUpdate['code'],
+                'slug' => $paramLastUpdate['slug'],
+                'title' => $paramLastUpdate['title'],
+                'status' => '',
+                'chapter' => $paramLastUpdate['chapter'],
+                'publish' => $paramLastUpdate['publish_date'],
+                'href' => $paramLastUpdate['href'],
+                'cron_at' => Carbon::now()->format('Y-m-d H:i:s')
+            );
+            $LogSave  = "Data Update - ".$paramLastUpdate['slug'];
+            $save = MainModel::updateLastUpdateChapterMangaMysql($Update,$conditions);
+        }  
+        return $LogSave;
+    }
+
+    public function convertPublishDate($countDays,$countTime){
+        if($countDays == 'ye'){
+            $addDays = $countTime.' years';
+        }elseif($countDays == 'da'){
+            $addDays = $countTime.' days';
+        }elseif($countDays == 'mi'){
+            $addDays = $countTime.' minuts';
+        }elseif($countDays == 'se'){
+            $addDays = $countTime.' seconds';
+        }elseif($countDays == 'ho'){
+            $addDays = $countTime.' hours';
+        }elseif($countDays == 'we'){
+            $addDays = $countTime.' weeks';
+        }elseif($countDays == 'mo'){
+            $addDays = $countTime.' months';
+        }else{
+            $addDays = '0 days';
+        }
+        $date = date('Y-m-d H:i:s');
+        $newtimestamp = strtotime($date.'-'.$addDays);
+        $datePublish = date('Y-m-d H:i:s', $newtimestamp);
+        return $datePublish;
     }
 }
