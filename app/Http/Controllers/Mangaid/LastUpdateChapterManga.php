@@ -23,12 +23,14 @@ use App\Helpers\V1\ResponseConnected as ResponseConnected;
 
 #Load Models
 use App\Models\V1\MainModel as MainModel;
+use App\Models\V1\Mongo\MainModelMongo as MainModelMongo;
 
 class LastUpdateChapterManga extends Controller
 {
     public function __construct()
     {
         $this->DetailMangaController = new DetailMangaController();
+        $this->mongo = Config::get('mongo');
     }
 
     public function LastUpdateChapterMangaScrap(Request $request = NULL, $params = NULL){
@@ -140,6 +142,7 @@ class LastUpdateChapterManga extends Controller
                         'href' => $hrefChapter,
                         'publish_date' => $publishDateChapter
                     ];
+                    // cek detail manga
                     if(empty($detailManga)){
                         $listDetailManga = [
                             'params' => [
@@ -199,8 +202,7 @@ class LastUpdateChapterManga extends Controller
                         {//insert lats update
                             $dataLastUpdateChapter = MainModel::getDataLastUpdateChapterManga($paramIdChapter);
                             $LogSave [] = $this->saveLastUpdate($detailManga, $dataChapter, $dataLastUpdateChapter ,$paramLastUpdate);
-                        }
-                        
+                        } 
                     }
                 }
                 return ResponseConnected::Success("Last Update Chapter Manga", Null, $LogSave, $awal);
@@ -282,4 +284,126 @@ class LastUpdateChapterManga extends Controller
         $datePublish = date('Y-m-d H:i:s', $newtimestamp);
         return $datePublish;
     }
+
+
+    // ================  generateLastUpdateAnime Save To Mongo =========================================
+    public function generateLastUpdateChapter(Request $request = NULL, $params = NULL){
+        $param = $params; # get param dari populartopiclist atau dari cron
+        if(is_null($params)) $param = $request->all();
+
+        $id = (isset($param['params']['id_last_update_chapter']) ? $param['params']['id_last_update_chapter'] : NULL);
+        $idChapter = (isset($param['params']['id_chapter']) ? $param['params']['id_chapter'] : NULL);
+        $idDetail = (isset($param['params']['id_detail']) ? $param['params']['id_detail'] : NULL);
+        $code = (isset($param['params']['code']) ? $param['params']['code'] : '');
+        $slug = (isset($param['params']['slug']) ? $param['params']['slug'] : '');
+        $title = (isset($param['params']['title']) ? $param['params']['title'] : '');
+        $startDate = (isset($param['params']['start_date']) ? $param['params']['start_date'] : NULL);
+        $endDate = (isset($param['params']['end_date']) ? $param['params']['end_date'] : NULL);
+        $isUpdated = (isset($param['params']['is_updated']) ? filter_var($param['params']['is_updated'], FILTER_VALIDATE_BOOLEAN) : FALSE);
+
+        $showLog = (isset($param['params']['show_log']) ? $param['params']['show_log'] : FALSE);
+        $parameter = [
+            'id' => $id,
+            'id_chapter' => $idChapter,
+            'id_detail' => $idDetail,
+            'code' => $code,
+            'slug' => $slug,
+            'title' => $title,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'is_updated' => $isUpdated
+        ];
+        
+        $LastUpdate = MainModel::getDataLastUpdateChapterManga($parameter);
+        
+        $errorCount = 0;
+        $successCount = 0;
+        if(count($LastUpdate)){
+            foreach($LastUpdate as $LastUpdate){
+                $conditions = [
+                    'id_auto' => $LastUpdate['id'].'-lastUpdateChapter',
+                ];
+                $parameterDetail = [
+                    'id' => $LastUpdate['id_detail_manga'],
+                ];
+                $detailManga = MainModel::getDataDetailManga($parameter);
+                $image = '';
+                $status = '';
+                foreach($detailManga as $valueDetail){
+                    $image = $valueDetail['image'];
+                    $status = $valueDetail['status'];
+                }
+                $MappingMongo = array(
+                    'id_auto' => $LastUpdate['id'].'-lastUpdateChapter',
+                    'id_list_manga' => $LastUpdate['id_list_manga'],
+                    'id_detail_manga' => $LastUpdate['id_detail_manga'],
+                    'id_last_update_chapter' => $LastUpdate['id'],
+                    'id_chapter' => $LastUpdate['id_chapter'],
+                    'source_type' => 'lastUpdateChapter-Manga',
+                    'code' => $LastUpdate['code'],
+                    'title' => Converter::__normalizeSummary($LastUpdate['title']),
+                    'slug' => $LastUpdate['slug'],
+                    // 'image' => $image,
+                    'status' => $status,
+                    'chapter' => $LastUpdate['chapter'],
+                    'keyword' => explode('-',$LastUpdate['slug']),
+                    'meta_title' => (Converter::__normalizeSummary(strtolower($LastUpdate['title']))),
+                    'meta_keywords' => explode('-',$LastUpdate['slug']),
+                    'meta_tags' => explode('-',$LastUpdate['slug']),
+                    'publish_date' => $LastUpdate['publish'],
+                    'cron_at' => $LastUpdate['cron_at']
+                );
+                
+                $updateMongo = MainModelMongo::updateLastUpdateChapterManga($MappingMongo, $this->mongo['use_collection_last_update_chapter'], $conditions, TRUE);
+
+                $status = 400;
+                $message = '';
+                $messageLocal = '';
+                if($updateMongo['status'] == 200){
+                    $status = 200;
+                    $message = 'success';
+                    $messageLocal = $updateMongo['message_local'];
+                    $successCount++;
+
+                }else{
+                    #jika dari cron dan pakai last_date atau pakai generate error
+                    #set error id generate
+                    if( (!is_null($params) && $endDate == TRUE) || (!is_null($params) && !empty($ids)) ){
+                        $error_id['response']['id'][$key] = $ListAnime['id']; #set id error generate
+                    }
+
+                    $status = 400;
+                    $message = 'error';
+                    $messageLocal = serialize($updateMongo['message_local']);
+                    $errorCount++;
+                }
+
+                #show log response
+                if($showLog){
+                    $slug = $MappingMongo['slug'];
+                    $prefixDate = Carbon::parse($MappingMongo['cron_at'])->format('Y-m-d H:i:s');
+                    if($isUpdated == TRUE) $prefixDate = Carbon::parse($MappingMongo['cron_at'])->format('Y-m-d H:i:s');
+                    echo $message.' | '.$prefixDate.' | '.$MappingMongo['id_auto'] .' => '.$slug.' | '.$messageLocal."\n";
+
+                }
+                
+            }
+        }else{
+            $status = 400;
+            $message = 'data tidak ditemukan';
+        }
+
+        $response['error'] = $errorCount;
+        $response['success'] = $successCount;
+
+        if(!is_null($params)){ # untuk cron
+            return $response;
+        }else{
+            return (new Response($response, 200))
+                ->header('Content-Type', 'application/json');
+        }
+        
+    }
+    // ================ End generateLastUpdateAnime Save To Mysql =========================================
+
 }

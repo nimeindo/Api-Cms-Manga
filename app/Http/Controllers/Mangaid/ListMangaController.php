@@ -16,12 +16,18 @@ use Throwable;
 
 #Load Helper V1
 use App\Helpers\V1\ResponseConnected as ResponseConnected;
+use App\Helpers\V1\Converter as Converter;
 
 #Load Models
 use App\Models\V1\MainModel as MainModel;
+use App\Models\V1\Mongo\MainModelMongo as MainModelMongo;
 
 class ListMangaController extends Controller
 {
+
+    function __construct(){
+        $this->mongo = Config::get('mongo');
+    }
         /**
      * @author [prayugo]
      * @create date 2020-05-05 02:19:09
@@ -147,4 +153,132 @@ class ListMangaController extends Controller
                         
         }
     }
+
+    // ======================= List Manga Generate save to Mongo ======================
+    public function ListMangaGenerate(Request $request = NULL, $params = NULL){
+
+        $param = $params; # get param dari populartopiclist atau dari cron
+        if(is_null($params)) $param = $request->all();
+
+        $id = (isset($param['params']['id']) ? $param['params']['id'] : NULL);
+        $code = (isset($param['params']['code']) ? $param['params']['code'] : '');
+        $slug = (isset($param['params']['slug']) ? $param['params']['slug'] : '');
+        $title = (isset($param['params']['title']) ? $param['params']['title'] : '');
+        $startNameIndex = (isset($param['params']['start_name_index']) ? $param['params']['start_name_index'] : '');
+        $endNameIndex = (isset($param['params']['end_name_index']) ? $param['params']['end_name_index'] : '');
+        $startDate = (isset($param['params']['start_date']) ? $param['params']['start_date'] : NULL);
+        $endDate = (isset($param['params']['end_date']) ? $param['params']['end_date'] : NULL);
+        $isUpdated = (isset($param['params']['is_updated']) ? filter_var($param['params']['is_updated'], FILTER_VALIDATE_BOOLEAN) : FALSE);
+
+        #jika pakai range date
+        $showLog = (isset($param['params']['show_log']) ? $param['params']['show_log'] : FALSE);
+        $parameter = [
+            'id' => $id,
+            'code' => $code,
+            'slug' => $slug,
+            'title' => $title,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'start_by_index' => $startNameIndex,
+            'end_by_index' => $endNameIndex,
+            'is_updated' => $isUpdated
+        ];
+        
+        $ListManga = MainModel::getDataListManga($parameter);
+        
+        $errorCount = 0;
+        $successCount = 0;
+        if(count($ListManga)){
+            foreach($ListManga as $ListManga){
+                $conditions = [
+                    'id_auto' => $ListManga['id'].'-listManga',
+                ];
+                $parameDetail = [
+                    'id_list_manga' => $ListManga['id'],
+                ];
+                $detailManga = MainModel::getDataDetailManga($parameDetail);
+                $idDetail = '';
+                $status = '';
+                $image = '';
+                $genre = '';
+                $rating = '';
+                foreach($detailManga as $valueDetail){
+                    $idDetail = $valueDetail['id'];
+                    $status = $valueDetail['status'];
+                    $image = $valueDetail['image'];
+                    $genre = $valueDetail['genre'];
+                    $rating = $valueDetail['rating'];
+                }
+                $MappingMongo = array(
+                    'id_auto' => $ListManga['id'].'-listManga',
+                    'id_list_manga' => $ListManga['id'],
+                    'id_detail_Manga' => $idDetail,
+                    'source_type' => 'list-Manga',
+                    'code' => $ListManga['code'],
+                    'title' => Converter::__normalizeSummary($ListManga['title']),
+                    'slug' => $ListManga['slug'],
+                    'name_index' => $ListManga['name_index'],
+                    // 'image' => $image,
+                    'status' => $status,
+                    'rating' => $rating,
+                    'genre' => explode('|',substr(trim($genre),0,-1)),
+                    'keyword' => explode('-',$ListManga['slug']),
+                    'meta_title' => (Converter::__normalizeSummary(strtolower($ListManga['title']))),
+                    'meta_keywords' => explode('-',$ListManga['slug']),
+                    'meta_tags' => explode('-',$ListManga['slug']),
+                    'cron_at' => $ListManga['cron_at']
+                );
+                
+                $updateMongo = MainModelMongo::updateListManga($MappingMongo, $this->mongo['use_collections_list_manga'], $conditions, TRUE);
+                
+                $status = 400;
+                $message = '';
+                $messageLocal = '';
+                if($updateMongo['status'] == 200){
+                    $status = 200;
+                    $message = 'success';
+                    $messageLocal = $updateMongo['message_local'];
+                    $successCount++;
+
+                }else{
+                    #jika dari cron dan pakai last_date atau pakai generate error
+                    #set error id generate
+                    if( (!is_null($params) && $endDate == TRUE) || (!is_null($params) && !empty($ids)) ){
+                        $error_id['response']['id'][$key] = $ListManga['id']; #set id error generate
+                    }
+
+                    $status = 400;
+                    $message = 'error';
+                    $messageLocal = serialize($updateMongo['message_local']);
+                    $errorCount++;
+                }
+
+                #show log response
+                if($showLog){
+                    $slug = $MappingMongo['slug'];
+                    $prefixDate = Carbon::parse($MappingMongo['cron_at'])->format('Y-m-d H:i:s');
+                    if($isUpdated == TRUE) $prefixDate = Carbon::parse($MappingMongo['cron_at'])->format('Y-m-d H:i:s');
+                    echo $message.' | '.$prefixDate.' | '.$MappingMongo['id_auto'] .' => '.$slug.' | '.$messageLocal."\n";
+
+                }
+                
+            }
+            
+        }else{
+            $status = 400;
+            $message = 'data tidak ditemukan';
+        }
+
+        $response['error'] = $errorCount;
+        $response['success'] = $successCount;
+
+        if(!is_null($params)){ # untuk cron
+            return $response;
+        }else{
+            return (new Response($response, 200))
+                ->header('Content-Type', 'application/json');
+        }
+    }
+
+    // ======================= End List Manga Generate save to Mongo======================
 }
