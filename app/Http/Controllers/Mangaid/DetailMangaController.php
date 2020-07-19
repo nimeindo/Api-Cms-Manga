@@ -373,7 +373,7 @@ class DetailMangaController extends Controller
                     #jika dari cron dan pakai last_date atau pakai generate error
                     #set error id generate
                     if( (!is_null($params) && $endDate == TRUE) || (!is_null($params) && !empty($ids)) ){
-                        $error_id['response']['id'][$key] = $detailAnime['id']; #set id error generate
+                        $error_id['response']['id'][$key] = $valueDetailManga['id']; #set id error generate
                     }
 
                     $status = 400;
@@ -407,6 +407,6 @@ class DetailMangaController extends Controller
             return (new Response($response, 200))
                 ->header('Content-Type', 'application/json');
         }
-        }
+    }
     
 }

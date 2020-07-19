@@ -30,6 +30,9 @@ class Kernel extends ConsoleKernel
         '\App\Console\Commands\Mongo\CronGenreMangaGenerateByAlfabetMG',
         '\App\Console\Commands\Mongo\CronListMangaGenerateByAlfabetMG',
         '\App\Console\Commands\Mongo\CronListMangaGenerateByDateMG',
+        '\App\Console\Commands\Mongo\CronLastUpdateMangaGenerateByDateMG',
+        '\App\Console\Commands\Mongo\CronImageChapterMangaByDateMG',
+        '\App\Console\Commands\Mongo\CronImageChapterMangaByIdMG',
     ];
 
     /**
@@ -112,6 +115,21 @@ class Kernel extends ConsoleKernel
             $schedule->command('CronListMangaGenerateByDateMG:CronListMangaGenerateByDateMGV1')
                 ->everyMinute() #setiap menit
                 ->appendOutputTo('/tmp/CronListMangaGenerateByDateMG.log');
+        }
+        if($config['CronLastUpdateMangaGenerateByDateMG']) {
+            $schedule->command('CronLastUpdateMangaGenerateByDateMG:CronLastUpdateMangaGenerateByDateMGV1')
+                ->everyMinute() #setiap menit
+                ->appendOutputTo('/tmp/CronLastUpdateMangaGenerateByDateMG.log');
+        }
+        if($config['CronImageChapterMangaByDateMG']) {
+            $schedule->command('CronImageChapterMangaByDateMG:CronImageChapterMangaByDateMGV1')
+                ->everyMinute() #setiap menit
+                ->appendOutputTo('/tmp/CronImageChapterMangaByDateMG.log');
+        }
+        if($config['CronImageChapterMangaByIdMG']) {
+            $schedule->command('CronImageChapterMangaByIdMG:CronImageChapterMangaByIdMGV1')
+                ->everyMinute() #setiap menit
+                ->appendOutputTo('/tmp/CronImageChapterMangaByIdMG.log');
         }
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands\Mysql;
+namespace App\Console\Commands\Mongo;
 
 use Illuminate\Console\Command;
 use \Illuminate\Http\Request;
@@ -18,21 +18,21 @@ use Carbon\Carbon;
 use App\Models\V1\MainModel as MainModel;
 
 
-class CronImageChapterMangaById extends Command
+class CronImageChapterMangaByIdMG extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'CronImageChapterMangaById:CronImageChapterMangaByIdV1 {ID_Chapter_First} {ID_Chapter_End} {ID_Chapter_Custom}';
+    protected $signature = 'CronImageChapterMangaByIdMG:CronImageChapterMangaByIdMGV1 {ID_Chapter_First} {ID_Chapter_End} {ID_Chapter_Custom}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Cron untuk generate data CronImageChapterMangaById';
+    protected $description = 'Cron untuk generate data CronImageChapterMangaByIdMG';
 
     /**
      * Create a new command instance.
@@ -78,18 +78,19 @@ class CronImageChapterMangaById extends Command
                     $getDataChapterManga = [
                         'params' => [
                             'X-API-KEY' => env('X_API_KEY',''),
-                            'chapter_href' => $ChapterManga['chapter_href']
+                            'id_chapter' => $ChapterManga['id'],
+                            'show_log' => TRUE
                         ]
                     ];
                     try{
-                        $data = $this->ImageChapterMangaController->ImageChapterMangaScrap(NULL,$getDataChapterManga);
+                        $data = $this->ImageChapterMangaController->GenerateChapterMangaAndImage(NULL,$getDataChapterManga);
                         echo json_encode($data)."\n\n";
                         $i++;
                     }catch(\Exception $e){
                         $dataNotSave[] = array(
                             'chapter' => $ChapterManga['chapter'],
                             'chapter_href' => $ChapterManga['chapter_href'],
-                            'id_chapter' => $ChapterManga['id']
+                            'id' => $ChapterManga['id']
                         );
                         $status = 'Not Complete';
                     }
@@ -99,19 +100,20 @@ class CronImageChapterMangaById extends Command
             for($j = $IDChapterFirst; $j <= $IDChapterEnd ; $j++){
                 $TotalHit = $hit++;
                 $param = [
-                    'id' => $j,
+                    'id_chapter' => $j,
                 ];
                 $ChapterManga = MainModel::getDataChapterManga($param);
-                // dd($ChapterManga);
+                
                 foreach($ChapterManga as $ChapterManga){
                     $getDataChapterManga = [
                         'params' => [
                             'X-API-KEY' => env('X_API_KEY',''),
-                            'chapter_href' => $ChapterManga['chapter_href']
+                            'id_chapter' => $ChapterManga['id'],
+                            'show_log' => TRUE
                         ]
                     ];
                     try{
-                        $data = $this->ImageChapterMangaController->ImageChapterMangaScrap(NULL,$getDataChapterManga);
+                        $data = $this->ImageChapterMangaController->GenerateChapterMangaAndImage(NULL,$getDataChapterManga);
                         echo json_encode($data)."\n\n";
                         $i++;
                     }catch(\Exception $e){

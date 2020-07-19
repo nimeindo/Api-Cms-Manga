@@ -6,6 +6,8 @@ $config = [
     'use_collections_list_manga' => env('DB_COLLECTIONS_LIST_MANGA', ''),
     'collections_genre_list_manga' => env('DB_COLLECTIONS_GENRE_LIST_MANGA', ''),
     'collections_chapter_manga' => env('DB_COLLECTIONS_CHAPTER_MANGA', ''),
+    'use_collection_detail_top_manga' => env('DB_COLLECTIONS_DETAIL_TOP_MANGA', ''),
+    'use_collection_recomendation_manga' => env('DB_COLLECTIONS_RECOMENDATION_MANGA', ''),
 ];
 
 return $config;

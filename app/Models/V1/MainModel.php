@@ -269,7 +269,7 @@ class MainModel extends Model
         ini_set('memory_limit','1024M');
         $query = DB::connection('mysql')
             ->table($tabel_name)
-            ->orderBy('id', 'asc');
+            ->orderBy('slug', 'desc');
         if(!empty($code)) $query = $query->where('code', '=', $code);
         if(!empty($idChapter)) $query = $query->where('id', '=', $idChapter);
         if(!empty($slug)) $query = $query->where('slug', '=', $slug);

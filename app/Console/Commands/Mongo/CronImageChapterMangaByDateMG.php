@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands\Mysql;
+namespace App\Console\Commands\Mongo;
 
 use Illuminate\Console\Command;
 use \Illuminate\Http\Request;
@@ -18,21 +18,21 @@ use Carbon\Carbon;
 use App\Models\V1\MainModel as MainModel;
 
 
-class CronImageChapterMangaByDate extends Command
+class CronImageChapterMangaByDateMG extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'CronImageChapterMangaByDate:CronImageChapterMangaByDateV1  {start_date} {end_date} {is_update}';
+    protected $signature = 'CronImageChapterMangaByDateMG:CronImageChapterMangaByDateMGV1  {start_date} {end_date} {is_update}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Cron untuk generate data CronImageChapterMangaByDateV1';
+    protected $description = 'Cron untuk generate data CronImageChapterMangaByDateMG';
 
     /**
      * Create a new command instance.
@@ -56,7 +56,7 @@ class CronImageChapterMangaByDate extends Command
         $isUpdate = filter_var($this->argument('is_update'), FILTER_VALIDATE_BOOLEAN);
 
         $path_log = base_path('storage/logs/generate/mysql');
-        $filename = $path_log.'/CronImageChapterMangaByDateV1.json';
+        $filename = $path_log.'/CronImageChapterMangaByDateMG.json';
         #get file log last date generate
         if(file_exists($filename)) $content = file_get_contents($filename);
 
@@ -74,7 +74,7 @@ class CronImageChapterMangaByDate extends Command
             'end_date' => $EndDate
         ];
         $ChapterManga = MainModel::getDataChapterManga($param);
-        
+        // dd($ChapterManga);
         $status = "Complete";
         $i = 0;
         $dataNotSave = array();
@@ -83,11 +83,12 @@ class CronImageChapterMangaByDate extends Command
             $listDataChapter = [
                 'params' => [
                     'X-API-KEY' => env('X_API_KEY',''),
-                    'chapter_href' => $ChapterManga['chapter_href']
+                    'id_chapter' => $ChapterManga['id'],
+                    'show_log' => TRUE
                 ]
             ];
             try{
-                $data = $this->ImageChapterMangaController->ImageChapterMangaScrap(NULL,$listDataChapter);
+                $data = $this->ImageChapterMangaController->GenerateChapterMangaAndImage(NULL,$listDataChapter);
                 echo json_encode($data)."\n\n";
                 $i++;
             }catch(\Exception $e){
@@ -99,7 +100,6 @@ class CronImageChapterMangaByDate extends Command
                 $status = 'Not Complete';
                 
             }
-            
         }
         $notSave = $TotalHit - $i;
 

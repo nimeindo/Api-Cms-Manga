@@ -12,6 +12,8 @@ $config['mongo']['use_collection_list_episode'] = env('DB_COLLECTIONS_LIST_EPISO
 $config['mongo']['use_collection_stream_anime'] = env('DB_COLLECTIONS_STREAM_ANIME', 'contents');
 $config['mongo']['use_collection_trending_week'] = env('DB_COLLECTIONS_TRENDING_WEEK', 'contents');
 $config['mongo']['use_collection_genrelist_anime'] = env('DB_COLLECTIONS_GENRE_LIST_ANIME', 'contents');
+$config['mongo']['use_collection_detail_top_anime'] = env('DB_COLLECTIONS_DETAIL_TOP_MANGA', 'contents');
+$config['mongo']['use_collection_recomendation_manga'] = env('DB_COLLECTIONS_RECOMENDATION_MANGA', 'contents');
 
 
 return $config;

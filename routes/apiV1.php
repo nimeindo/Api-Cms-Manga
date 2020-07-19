@@ -18,4 +18,8 @@ $router->group(['prefix' => 'M/1', 'namespace' => 'Mangaid'], function () use ($
     $router->post('ListMangaGenerate', 'ListMangaController@ListMangaGenerate');
     $router->post('GenerateGenreListManga', 'GenreListMangaController@GenerateGenreListManga');
     $router->post('GenerateChapterMangaAndImage', 'ImageChapterMangaController@GenerateChapterMangaAndImage');
+    $router->post('GenerateTopDetailManga', 'MangaTopController@generateTopDetailManga');
+    $router->post('unPublishTopDetailManga', 'MangaTopController@unPublishTopDetailManga');
+    $router->post('GenerateRecomendationManga', 'MangaRecomendationController@generateRecomendationManga');
+    $router->post('UnPublishRecomendatinManga', 'MangaRecomendationController@unPublishRecomendatinManga');
 });
