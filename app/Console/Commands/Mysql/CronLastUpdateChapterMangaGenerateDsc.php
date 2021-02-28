@@ -60,7 +60,7 @@ class CronLastUpdateChapterMangaGenerateDsc extends Command
         $filename = $path_log.'/CronLastUpdateGenerateDscV1.json';
         #get file log last date generate
         if(file_exists($filename)) $content = file_get_contents($filename);
-        
+
         $response = [];
         $status = "Complete";
         $TotalHit = 1;
@@ -102,18 +102,18 @@ class CronLastUpdateChapterMangaGenerateDsc extends Command
                         'PageNumber' => $i
                     ]
                 ];
-                try{
+                // try{
                     $data = $this->LastUpdateChapterManga->LastUpdateChapterMangaScrap(NULL,$lastUpdate);
                     echo json_encode($data)."\n\n";
-                    
-                }catch(\Exception $e){
-                    echo "Not Save Page Number :".$i."\n\n";
-                    $dataNotSave[] = array(
-                        'PageNumber' => $i,
-                    );
-                    $status = 'Not Complete';
-                    $notSaveHit++;
-                }
+
+                // }catch(\Exception $e){
+                //     echo "Not Save Page Number :".$i."\n\n";
+                //     $dataNotSave[] = array(
+                //         'PageNumber' => $i,
+                //     );
+                //     $status = 'Not Complete';
+                //     $notSaveHit++;
+                // }
                 $hit++;
             }
             $TotDataSave = ($hit - $notSaveHit);

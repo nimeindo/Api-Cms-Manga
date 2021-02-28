@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands\Mongo;
+namespace App\Console\Commands\Mysql;
 
 use Illuminate\Console\Command;
 use \Illuminate\Http\Request;
@@ -18,21 +18,21 @@ use Carbon\Carbon;
 use App\Models\V1\MainModel as MainModel;
 
 
-class CronDetailMangaGenerateByDateMG extends Command
+class CronDetailLastUpdateByDate extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'CronDetailMangaGenerateByDateMG:CronDetailMangaGenerateByDateMGV1  {start_date} {end_date} {is_update}';
+    protected $signature = 'CronDetailLastUpdateByDate:CronDetailLastUpdateByDateV1  {start_date} {end_date} {is_update}' ;
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Cron untuk generate data CronDetailMangaGenerateByDateMGV1';
+    protected $description = 'Cron untuk generate data CronDetailLastUpdateByDateV1';
 
     /**
      * Create a new command instance.
@@ -56,18 +56,16 @@ class CronDetailMangaGenerateByDateMG extends Command
         $isUpdate = filter_var($this->argument('is_update'), FILTER_VALIDATE_BOOLEAN);
 
         $path_log = base_path('storage/logs/generate/mysql');
-        $filename = $path_log.'/CronDetailMangaGenerateByDateMG.json';
+        $filename = $path_log.'/CronDetailLastUpdateByDateV1.json';
         #get file log last date generate
         if(file_exists($filename)) $content = file_get_contents($filename);
+        
         if($isUpdate){
-            $Jam =env('TIME_ISUPDATE_MONGO', '1');
+            $Jam = env('TIME_ISUPDATE_MYSQL', '1');
             $date = date('Y-m-d H:i:s');
             $starTimestamp = strtotime($date.'-'.$Jam.' hours');
             $startDate = date('Y-m-d H:i:s', $starTimestamp);
-            // $endTimestamp = strtotime($date.'+'.'10 hours');
-            // $EndDate = date('Y-m-d H:i:s', $endTimestamp);
             $EndDate = '';
-            
         }
         
         $response = [];
@@ -75,34 +73,39 @@ class CronDetailMangaGenerateByDateMG extends Command
             'start_date' => $startDate,
             'end_date' => $EndDate
         ];
-        
         $LastChapter = MainModel::getDataLastUpdateChapterManga($param);
-        
-        $status = "Complete";
-        $i = 0;
-        $dataNotSave = array();
-        $TotalHit = (count($LastChapter));
-        foreach($LastChapter as $listManga){
-            
-            $listDataManga = [
-                'params' => [
-                    'id_list_manga' => $listManga['id_list_manga'],
-                    'show_log' => TRUE
-                ]
+        foreach($LastChapter as $LastChapterAs){
+            $params = [
+                'id' => $LastChapterAs['id_list_manga'],
             ];
             
-            try{
-                $data = $this->DetailMangaController->generateDetailManga(NULL,$listDataManga);
-                
-                echo json_encode($data)."\n\n";
-                $i++;
-            }catch(\Exception $e){
-                $dataNotSave[] = array(
-                    'Title' => $listManga['title'],
-                    'Index' => $listManga['name_index'],
-                    'id' => $listManga['id']
-                );
-                $status = 'Not Complete';
+            $listManga = MainModel::getDataListManga($params);
+            
+            $status = "Complete";
+            $i = 0;
+            $dataNotSave = array();
+            $TotalHit = (count($listManga));
+            foreach($listManga as $listManga){
+                $listDataChapter = [
+                    'params' => [
+                        'X-API-KEY' => env('X_API_KEY',''),
+                        'detail_href' => $listManga['href']
+                    ]
+                ];
+                try{
+                    $data = $this->DetailMangaController->DetailMangaScrap(NULL,$listDataChapter);
+                    
+                    echo json_encode($data)."\n\n";
+                    $i++;
+                }catch(\Exception $e){
+                    $dataNotSave[] = array(
+                        'Title' => $listManga['title'],
+                        'Index' => $listManga['name_index'],
+                        'id' => $listManga['id']
+                    );
+                    $status = 'Not Complete';
+                    
+                }
                 
             }
         }

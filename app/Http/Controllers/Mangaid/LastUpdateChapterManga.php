@@ -253,7 +253,7 @@ class LastUpdateChapterManga extends Controller
                 'chapter' => $paramLastUpdate['chapter'],
                 'publish' => $paramLastUpdate['publish_date'],
                 'href' => $paramLastUpdate['href'],
-                'cron_at' => Carbon::now()->format('Y-m-d H:i:s')
+                // 'cron_at' => Carbon::now()->format('Y-m-d H:i:s')
             );
             $LogSave  = "Data Update - ".$paramLastUpdate['slug'];
             $save = MainModel::updateLastUpdateChapterMangaMysql($Update,$conditions);
@@ -351,11 +351,11 @@ class LastUpdateChapterManga extends Controller
                     'meta_keywords' => explode('-',$LastUpdate['slug']),
                     'meta_tags' => explode('-',$LastUpdate['slug']),
                     'publish_date' => $LastUpdate['publish'],
-                    'cron_at' => $LastUpdate['cron_at']
+                    'cron_at' => Carbon::now()->format('Y-m-d H:i:s')
                 );
                 
                 $updateMongo = MainModelMongo::updateLastUpdateChapterManga($MappingMongo, $this->mongo['use_collection_last_update_chapter'], $conditions, TRUE);
-
+                
                 $status = 400;
                 $message = '';
                 $messageLocal = '';

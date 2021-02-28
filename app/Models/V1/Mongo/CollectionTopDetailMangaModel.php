@@ -14,6 +14,6 @@ class CollectionTopDetailMangaModel extends Eloquent
     protected $primarykey = "_id";
 
     public function __construct() {
-        $this->collection = Config::get("general_config.mongo.use_collection_detail_top_anime");
+        $this->collection = Config::get("general_config.mongo.use_collection_detail_top_manga");
     }
 }

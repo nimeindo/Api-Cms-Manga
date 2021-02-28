@@ -17,6 +17,7 @@ use App\Models\V1\Mongo\CollectionListMangaModel;
 use App\Models\V1\Mongo\CollectionGenreListModel;
 use App\Models\V1\Mongo\CollectionChapterMangaModel;
 use App\Models\V1\Mongo\CollectionTopDetailMangaModel;
+use App\Models\V1\Mongo\CollectionSliderMangaModel;
 use App\Models\V1\Mongo\CollectionRecomendationMangaModel;
 
 class MainModelMongo extends Model
@@ -89,6 +90,7 @@ class MainModelMongo extends Model
      */
     // ====================================== updateLastUpdateChapterManga ======================================================================
     static function updateLastUpdateChapterManga($data = [], $collections = NULL, $conditions = [], $upsert = TRUE, $database_name = 'mongodb'){
+        
         if($upsert == TRUE){ #USE UPSERT
             $query = CollectionLastUpdateChapterModel::on($database_name)->raw(function($collection) use ($conditions, $data)
             {
@@ -97,6 +99,7 @@ class MainModelMongo extends Model
                 ['$set' => $data],
                 ['upsert' => true]);
             });
+            
 
             if($query->isAcknowledged() == TRUE){
                 if($query->getModifiedCount() > 0 || $query->getUpsertedCount() > 0){
@@ -114,7 +117,7 @@ class MainModelMongo extends Model
                 $result['message_local'] = 'Gagal Update';
             }
         }else{
-            $query = CollectionLastUpdateModel::on($database_name)->raw()->updateOne(
+            $query = CollectionLastUpdateChapterModel::on($database_name)->raw()->updateOne(
                 $conditions,
                 ['$set' => $data],
                 ['w' => 'majority']
@@ -376,6 +379,59 @@ class MainModelMongo extends Model
     }
     // ====================================== End updateTopDetailListManga ======================================================================
 
+    // ====================================== updateTopDetailListManga ======================================================================
+    static function updateSliderDetailListManga($data = [], $collections = NULL, $conditions = [], $upsert = TRUE, $database_name = 'mongodb'){
+        if($upsert == TRUE){ #USE UPSERT
+            $query = CollectionSliderMangaModel::on($database_name)->raw(function($collection) use ($conditions, $data)
+            {
+                return $collection->updateOne(
+                $conditions,
+                ['$set' => $data],
+                ['upsert' => true]);
+            });
+
+            if($query->isAcknowledged() == TRUE){
+                if($query->getModifiedCount() > 0 || $query->getUpsertedCount() > 0){
+                    $result['status'] = 200;
+                    $result['message'] = 'Berhasil Update';
+                    $result['message_local'] = 'Berhasil Update';
+                }else{
+                    $result['status'] = 200;
+                    $result['message'] = 'Gagal Update';
+                    $result['message_local'] = 'Match 1, Update 0';
+                }
+            }else{
+                $result['status'] = 400;
+                $result['message'] = 'Gagal Update';
+                $result['message_local'] = 'Gagal Update';
+            }
+        }else{
+            $query = CollectionTopDetailMangaModel::on($database_name)->raw()->updateOne(
+                $conditions,
+                ['$set' => $data],
+                ['w' => 'majority']
+            );
+
+            if($query->isAcknowledged() == TRUE){
+                if($query->getModifiedCount() > 0){
+                    $result['status'] = 200;
+                    $result['message'] = 'Berhasil Update';
+                    $result['message_local'] = 'Berhasil Update';
+                }else{
+                    $result['status'] = 200;
+                    $result['message'] = 'Gagal Update';
+                    $result['message_local'] = 'Match 1, Update 0';
+                }
+            }else{
+                $result['status'] = 400;
+                $result['message'] = 'Gagal Update';
+                $result['message_local'] = 'Gagal Update';
+            }
+        }
+        return $result;
+    }
+    // ====================================== End updateTopDetailListManga ======================================================================
+
     /**
      * @author [Prayugo]
      * @create date 2020-07-04 12:01:06
@@ -421,6 +477,35 @@ class MainModelMongo extends Model
         $code = (isset($params['code']) ? $params['code'] : '');
         
         $query = CollectionTopDetailMangaModel::on($database_name)
+            ->timeout($timeout);
+        if(!empty($slug)) $query = $query->where('slug', '=', $slug);
+        if(!empty($idListManga)) $query = $query->where('id_list_manga', '=', (int)$idListManga);
+        if(!empty($idDetailManga)) $query = $query->where('id_detail_manga', '=', (int)$idDetailManga);
+        if(!empty($code)) $query = $query->where('code', '=', $code);
+        
+        $collection = '';
+        $data['collection_count'] = 0;
+        if(!empty($query)){
+            $collection = $query->get();
+            $data['collection_count'] = 1;
+        }
+        $data['collection'] = $collection;
+
+        return $data;
+    }
+    #================ End getDataTopDetailListAnime ==================================
+
+    #================ getDataTopDetailListManga ==================================
+    static function getDataSliderDetailListManga($params = [],$database_name = 'mongodb'){
+
+        $timeout = Config::get('general_config.mongo.query_timeout');
+
+        $slug = (isset($params['slug']) ? $params['slug'] : '');
+        $idListManga = (isset($params['id_list_manga']) ? $params['id_list_manga'] : NULL);
+        $idDetailManga = (isset($params['id_detail_manga']) ? $params['id_detail_manga'] : NULL);
+        $code = (isset($params['code']) ? $params['code'] : '');
+        
+        $query = CollectionSliderMangaModel::on($database_name)
             ->timeout($timeout);
         if(!empty($slug)) $query = $query->where('slug', '=', $slug);
         if(!empty($idListManga)) $query = $query->where('id_list_manga', '=', (int)$idListManga);

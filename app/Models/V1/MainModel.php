@@ -16,7 +16,7 @@ use Carbon\Carbon;
 
 class MainModel extends Model
 {
-    
+
     /**
      * @author [Prayugo]
      * @create date 2020-05-06 02:50:48
@@ -125,17 +125,17 @@ class MainModel extends Model
         if(!empty($code)) $query = $query->where('code', '=', $code);
         if(!empty($id)) $query = $query->where('id', '=', $id);
         if(!empty($slug)) $query = $query->where('slug', '=', $slug);
-        if(!empty($title)) $title = $query->where('title', 'Like', "%".$title.'%');  
+        if(!empty($title)) $title = $query->where('title', 'Like', "%".$title.'%');
         if(!empty($startByIndex)) $query = $query->where('name_index', 'Like', "%".$startByIndex);
         if(!empty($EndByIndex)){
             $alphas = range($startByIndex, $EndByIndex);
             for($i = 0;$i<count($alphas); $i++){
-                $query = $query->orWhere('name_index', 'Like', "%".$alphas[$i]);  
+                $query = $query->orWhere('name_index', 'Like', "%".$alphas[$i]);
             }
-        } 
+        }
         if(!empty($startDate) && empty($endDate)) $query = $query->where('cron_at', '>=', $startDate);
         if($startDate && $endDate) $query = $query->whereBetween('cron_at', [$startDate, $endDate]);
-        
+
         $query = $query->get();
 
         $result = [];
@@ -166,13 +166,13 @@ class MainModel extends Model
         ini_set('memory_limit','1024M');
         $query = DB::connection('mysql')
             ->table($tabel_name);
-        
-        if(!empty($ID)) $query = $query->where('id', '=', $ID);    
-        if(!empty($idListmanga)) $query = $query->where('id_list_manga', '=', $idListmanga);    
-        if(!empty($Slug)) $query = $query->where('slug', '=', $Slug);    
+
+        if(!empty($ID)) $query = $query->where('id', '=', $ID);
+        if(!empty($idListmanga)) $query = $query->where('id_list_manga', '=', $idListmanga);
+        if(!empty($Slug)) $query = $query->where('slug', '=', $Slug);
         if(!empty($code)) $query = $query->where('code', '=', $code);
         if(!empty($Title)) $query = $query->where('title', 'Like', "%".$Title);
-        
+
         if($isUpdated){ #ambil data update atau terbaru
             $startDate = date('Y-m-d');
             $endDate = date("Y-m-d", strtotime('tomorrow'));
@@ -188,8 +188,8 @@ class MainModel extends Model
         return $result;
     }
     #================ End getDataDetailManga ==================================
-    
-    
+
+
     /**
      * @author [Prayugo]
      * @create date 2020-05-10 07:18:27
@@ -264,7 +264,7 @@ class MainModel extends Model
         $idListManga = (isset($params['id_list_manga']) ? $params['id_list_manga'] : '');
         $startDate = (isset($params['start_date']) ? $params['start_date'] : '');
         $endDate = (isset($params['end_date']) ? $params['end_date'] : '');
-        
+
         $tabel_name = 'chapter';
         ini_set('memory_limit','1024M');
         $query = DB::connection('mysql')
@@ -286,7 +286,7 @@ class MainModel extends Model
     }
     #================ End getDataChapterManga ==================================
 
-    
+
     /**
      * @author [Prayugo]
      * @create date 2020-05-10 07:18:27
@@ -359,7 +359,7 @@ class MainModel extends Model
         $id_chapter = (isset($params['id_chapter']) ? $params['id_chapter'] : '');
         $startDate = (isset($params['start_date']) ? $params['start_date'] : '');
         $endDate = (isset($params['end_date']) ? $params['end_date'] : '');
-        
+
         $tabel_name = 'image_chapter';
         ini_set('memory_limit','1024M');
         $query = DB::connection('mysql')
@@ -367,7 +367,7 @@ class MainModel extends Model
             ->orderBy('no_frame','desc')
             ->groupby('no_frame')
             ->distinct();
-        
+
         if(!empty($code)) $query = $query->where('code', '=', $code);
         if(!empty($slug)) $query = $query->where('slug', '=', $slug);
         if(!empty($id)) $query = $query->where('id', '=', $id);
@@ -383,7 +383,7 @@ class MainModel extends Model
     }
     #================ End getDataImageChapterManga ==================================
 
-    
+
     /**
      * @author [prayugo]
      * @create date 2020-05-11 06:26:46
@@ -457,7 +457,7 @@ class MainModel extends Model
         $startDate = (isset($params['start_date']) ? $params['start_date'] : '');
         $endDate = (isset($params['end_date']) ? $params['end_date'] : '');
         $isUpdated = (isset($params['is_updated']) ? $params['is_updated'] : false);
-        
+
         if($isUpdated){
             $startDate = date('Y-m-d');
             $endDate = date("Y-m-d", strtotime('tomorrow'));
@@ -466,7 +466,7 @@ class MainModel extends Model
         ini_set('memory_limit','1024M');
         $query = DB::connection('mysql')
             ->table($tabel_name);
-        
+
         if(!empty($code)) $query = $query->where('code', '=', $code);
         if(!empty($id)) $query = $query->where('id', '=', $id);
         if(!empty($id_chapter)) $query = $query->where('id_chapter', '=', $id_chapter);
@@ -482,7 +482,7 @@ class MainModel extends Model
     }
     #================ End getDataLastUpdateChapterManga ==================================
 
-    
+
     /**
      * @author [prayugo]
      * @create date 2020-05-11 06:26:46
@@ -549,7 +549,7 @@ class MainModel extends Model
      */
     #================  checkExistImageChapter ==================================
     public static function checkExistImageChapter($params = []){
-        
+
         ini_set('memory_limit','20480M');
         $query2 = DB::connection('mysql')
         ->table('chapter')
@@ -578,14 +578,14 @@ class MainModel extends Model
      */
     #================  checkIdChapterOnImageChapter ==================================
     public static function checkIdChapterOnImageChapter($params = []){
-        
+
         ini_set('memory_limit','20480M');
         $query = DB::connection('mysql')
         ->table('image_chapter')
         ->select(DB::raw("COUNT(id_chapter) id_chapter, id_chapter"))
         ->groupBy("id_chapter")
         ->havingRaw("COUNT(id_chapter) < 5");
-        
+
         $query = $query->get();
 
         $result = [];
@@ -614,16 +614,16 @@ class MainModel extends Model
         ini_set('memory_limit','1024M');
         $query = DB::connection('mysql')
             ->table($tabel_name);
-        
+
         if(!empty($code)) $query = $query->where('code', '=', $code);
-        if(!empty($ID)) $query = $query->where('id', '=', $ID);    
-        if(!empty($Slug)) $query = $query->where('slug', '=', $Slug);    
+        if(!empty($ID)) $query = $query->where('id', '=', $ID);
+        if(!empty($Slug)) $query = $query->where('slug', '=', $Slug);
         if(!empty($genre)) $query = $query->where('genre', 'Like', "%".$genre);
         if(!empty($startByIndex)) $query = $query->where('name_index', 'Like', "%".$startByIndex);
         if(!empty($EndByIndex)){
             $alphas = range($startByIndex, $EndByIndex);
             for($i = 0;$i < count($alphas); $i++){
-                $query = $query->orWhere('name_index', 'Like', "%".$alphas[$i]);  
+                $query = $query->orWhere('name_index', 'Like', "%".$alphas[$i]);
             }
         }
         if($isUpdated){ #ambil data update atau terbaru
@@ -696,5 +696,97 @@ class MainModel extends Model
         return $data;
     }
     #================ End updateGenreListMangaMysql ==================================
+
+    /**
+     * @author [Prayugo]
+     * @create date 2021-02-28 09:17:34
+    * @modify date 2021-02-28 09:17:34
+     * @desc function getDataListNotificationManga
+     */
+    #================  getDataListNotificationManga ==================================
+    public static function getDataListNotificationManga($params = []){
+        $ID = (isset($params['id']) ? $params['id'] : '');
+        $code = (isset($params['code']) ? $params['code'] : '');
+        $Slug = (isset($params['slug']) ? $params['slug'] : '');
+        $isUpdated = (isset($params['is_updated']) ? $params['is_updated'] : FALSE); #untuk data terbaru 2 jam terakhir
+
+        $tabel_name = 'list_notification';
+        ini_set('memory_limit','1024M');
+        $query = DB::connection('mysql')
+            ->table($tabel_name);
+
+        if(!empty($code)) $query = $query->where('code', '=', $code);
+        if(!empty($ID)) $query = $query->where('id', '=', $ID);
+        if(!empty($Slug)) $query = $query->where('slug', '=', $Slug);
+        if($isUpdated){ #ambil data update atau terbaru
+            $startDate = date('Y-m-d');
+            $endDate = date("Y-m-d", strtotime('tomorrow'));
+            $query = $query->whereBetween('cron_at', [$startDate, $endDate]);
+        }
+        $query = $query->get();
+
+        $result = [];
+        if(count($query)) $result = collect($query)->map(function($x){ return (array) $x; })->toArray();
+        return $result;
+    }
+    #================ End getDataListNotificationManga ==================================
+
+    /**
+     * @author [Prayugo]
+     * @create date 2021-02-28 09:17:34
+    * @modify date 2021-02-28 09:17:34
+     * @desc function insertListNotificationMangaMysql
+     */
+    #================  insertListNotificationMangaMysql ==================================
+    public static function insertListNotificationMangaMysql($data_all = [], $justInsert = FALSE){
+        $tabel_name = 'list_notification';
+        $query = DB::connection('mysql')
+            ->table($tabel_name);
+        if($justInsert){
+            $query = $query->insert($data_all);
+        }else{
+            $query = $query->insertGetId($data_all);
+        }
+        $error = [];
+        $data['status'] = 200;
+        $data['message'] = 'success insert '.$tabel_name;
+        if(!$query) {
+            $data['status'] = 400;
+            $data['message'] = 'failed insert '.$tabel_name;
+            $error['msg'] = 'error insert '.$tabel_name;
+            $error['num'] = 'error num insert '.$tabel_name;
+        }
+
+        $data['error'] 	= $error;
+        if(!$justInsert) $data['id_result'] = $query;
+        return $data;
+    }
+    #================ End insertListNotificationMangaMysql ==================================
+
+    /**
+     * @author [Prayugo]
+     * @create date 2020-06-01 15:15:49
+     * @modify date 2020-06-01 15:15:49
+     * @desc [updateListNotifiactionMangaMysql]
+     */
+    #================  updateListNotifiactionMangaMysql ==================================
+    public static function updateListNotifiactionMangaMysql($data_all = [], $conditions){
+        $tabel_name = 'list_notification';
+        $query = DB::connection('mysql')
+            ->table($tabel_name);
+
+        foreach($conditions as $key => $value){
+            $query = $query->where($key, $value);
+        }
+        $query = $query->update($data_all);
+        $data['status'] = 400;
+        $data['message'] = 'failed insert '.$tabel_name;
+        if($query){
+            $data['status'] = 200;
+            $data['message'] = 'success insert '.$tabel_name;
+        }
+        return $data;
+    }
+    #================ End updateListNotifiactionMangaMysql ==================================
 
 }

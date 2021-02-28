@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands\Mongo;
+namespace App\Console\Commands\Mysql;
 
 use Illuminate\Console\Command;
 use \Illuminate\Http\Request;
@@ -18,21 +18,21 @@ use Carbon\Carbon;
 use App\Models\V1\MainModel as MainModel;
 
 
-class CronImageChapterMangaByDateMG extends Command
+class CronDetalIamageChapterLastUpdateByDate extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'CronImageChapterMangaByDateMG:CronImageChapterMangaByDateMGV1  {start_date} {end_date} {is_update}';
+    protected $signature = 'CronDetalIamageChapterLastUpdateByDate:CronDetalIamageChapterLastUpdateByDateV1  {start_date} {end_date} {is_update}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Cron untuk generate data CronImageChapterMangaByDateMG';
+    protected $description = 'Cron untuk generate data CronDetalIamageChapterLastUpdateByDateV1';
 
     /**
      * Create a new command instance.
@@ -56,12 +56,12 @@ class CronImageChapterMangaByDateMG extends Command
         $isUpdate = filter_var($this->argument('is_update'), FILTER_VALIDATE_BOOLEAN);
 
         $path_log = base_path('storage/logs/generate/mysql');
-        $filename = $path_log.'/CronImageChapterMangaByDateMG.json';
+        $filename = $path_log.'/CronDetalIamageChapterLastUpdateByDateV1.json';
         #get file log last date generate
         if(file_exists($filename)) $content = file_get_contents($filename);
 
         if($isUpdate){
-            $Jam =env('TIME_ISUPDATE_MONGO', '1');
+            $Jam = env('TIME_ISUPDATE_MYSQL', '1');
             $date = date('Y-m-d H:i:s');
             $newtimestamp = strtotime($date.'-'.$Jam.' hours');
             $startDate = date('Y-m-d H:i:s', $newtimestamp);
@@ -70,10 +70,15 @@ class CronImageChapterMangaByDateMG extends Command
          
         $response = [];
         $param = [
-            'code' => '',
             'start_date' => $startDate,
             'end_date' => $EndDate
         ];
+        $LastChapter = MainModel::getDataLastUpdateChapterManga($param);
+        dd($LastChapter);
+        foreach($LastChapter as $LastChapterAs){
+
+        }
+
         $ChapterManga = MainModel::getDataChapterManga($param);
         
         $status = "Complete";
@@ -84,12 +89,11 @@ class CronImageChapterMangaByDateMG extends Command
             $listDataChapter = [
                 'params' => [
                     'X-API-KEY' => env('X_API_KEY',''),
-                    'id_chapter' => $ChapterManga['id'],
-                    'show_log' => TRUE
+                    'chapter_href' => $ChapterManga['chapter_href']
                 ]
             ];
             try{
-                $data = $this->ImageChapterMangaController->GenerateChapterMangaAndImage(NULL,$listDataChapter);
+                $data = $this->ImageChapterMangaController->ImageChapterMangaScrap(NULL,$listDataChapter);
                 echo json_encode($data)."\n\n";
                 $i++;
             }catch(\Exception $e){
@@ -101,6 +105,7 @@ class CronImageChapterMangaByDateMG extends Command
                 $status = 'Not Complete';
                 
             }
+            
         }
         $notSave = $TotalHit - $i;
 

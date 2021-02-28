@@ -68,28 +68,35 @@ class ImageChapterMangaController extends Controller
         $BASE_URL_LIST = $CHAPTER_HREF;
         $client = new Client(['cookies' => new FileCookieJar('cookies.txt')]);
         $client->getConfig('handler')->push(CloudflareMiddleware::create());
-        $goutteClient = new GoutteClient();
+        // $client->followRedirects(true);
+        $goutteClient = new GoutteClient(['allow_redirects' => true]);
         $goutteClient->setClient($client);
-        $crawler = $goutteClient->request('GET', $BASE_URL_LIST);
+        $crawler = $goutteClient->request('GET', $BASE_URL_LIST,['allow_redirects' => true]);
         $response = $goutteClient->getResponse();
+        
         $status = $response->getStatusCode();
         
         if($status === 200){
-            $SubImage = $crawler->filter('#all > .img-responsive')->each(function ($node,$i) {
-                $image = $node->filter('img')->attr('src');
-                $altSub = $node->filter('img')->attr('alt');
-                $page = substr($altSub, strrpos($altSub, '-' )+1);
-                $getHttps = substr($image, 0,1); 
-                if($getHttps === '/'){
-                    $image = 'https:'.$image;
-                }
-                $SubImage = [
-                    'image' => $image,
-                    'page' => $page,
-                    'alt' => $altSub
-                ];
-                return $SubImage; 
-            });
+            // for($i = 0; $i < 100 ; $i++){
+                $SubImage = $crawler->filter('#all > .img-responsive')->each(function ($node,$i) {
+                    $image = $node->filter('img')->attr('src');
+                    $altSub = $node->filter('img')->attr('alt');
+                    $page = substr($altSub, strrpos($altSub, '-' )+1);
+                    $getHttps = substr($image, 0,1); 
+                    if($getHttps === '/'){
+                        $image = 'https:'.$image;
+                    }
+                    
+                    $SubImage = [
+                        'image' => $image,
+                        'page' => $page,
+                        'alt' => $altSub
+                    ];
+                    return $SubImage; 
+                });
+            // }
+            
+            
             if($SubImage){
                 $no_frame = 1;
                 foreach($SubImage as $valueImage){
@@ -98,12 +105,13 @@ class ImageChapterMangaController extends Controller
                     $image       = isset($valueImage['image']) ? $valueImage['image'] : '' ;
                     $page        = isset($valueImage['page']) ? $valueImage['page'] : '' ;
                     $slugImageChapter = isset($valueImage['alt']) ? Str::slug($valueImage['alt']) : '' ;
+                    
                     $codeImageChapter = md5($slugImageChapter);
                     $paramIdListChapter['code'] = $codeChapter;
                     $checkExist = MainModel::getDataChapterManga($paramIdListChapter);
                     if(empty($checkExist)){
                         $LogSave [] = "Data Not Exist Please Chek Your Slug Chapter - ".$slugChapter;
-                        
+                        $save = "Data Empty";
                     }else{
                         $chapterManga = MainModel::getDataChapterManga($paramIdListChapter);
                         $idChapterManga = (empty($chapterManga)) ? 0 : $chapterManga[0]['id'];
@@ -112,6 +120,7 @@ class ImageChapterMangaController extends Controller
                         // if($slugImageChapter=='blush-dc-himitsu-chapter-34-page-8'){
                         //     dd($codeImageChapter);
                         // }
+                        
                         if(empty($checkExistImage)){
                             $Input = array(
                                 'id_chapter' => $idChapterManga,
@@ -125,7 +134,7 @@ class ImageChapterMangaController extends Controller
                             $LogSave [] = "Data Save - ".$slugImageChapter;
                             $save = MainModel::insertImageChapterMangaMysql($Input);
                         }else{
-                            $conditions['id'] = $checkExist[0]['id'];
+                            $conditions['id'] = $checkExistImage[0]['id'];
                             $Update = array(
                                 'id_chapter' => $idChapterManga,
                                 'code' => $codeImageChapter,
@@ -133,20 +142,29 @@ class ImageChapterMangaController extends Controller
                                 'image' => $image,
                                 "no_frame" => $no_frame,
                                 'page' => $page,
-                                'cron_at' => Carbon::now()->format('Y-m-d H:i:s')
+                                // 'cron_at' => Carbon::now()->format('Y-m-d H:i:s')
                             );
+                            
                             $LogSave [] =  "Data Update - ".$slugImageChapter;
+                            $dataUpdate[] = $Update;
                             $save = MainModel::updateImageChapterMangaMysql($Update,$conditions);
                             
                         }
                     }
+
                     $no_frame++;
+                    
                 }
+                
                 return ResponseConnected::Success("Image Chapter Manga", $save, $LogSave, $awal);
             }else{
+                echo "Image Chapter Manga Page Not Found.";
+                dd($SubImage);
                 return ResponseConnected::PageNotFound("Image Chapter Manga","Page Not Found.", $awal);
             }
         }else{
+            echo "Image Chapter Manga Page Not Found.";
+            dd($BASE_URL_LIST);
             return ResponseConnected::PageNotFound("Image Chapter Manga","Page Not Found.", $awal);
         }
     }
@@ -243,6 +261,7 @@ class ImageChapterMangaController extends Controller
                         'no_frame' => $valueImageChapter['no_frame'],
                     ];
                 }
+                
                 $paramDetail = [
                     'id' => $valueGetChapter['id_detail_manga']
                 ];

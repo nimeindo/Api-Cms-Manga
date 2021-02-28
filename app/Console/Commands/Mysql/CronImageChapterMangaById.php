@@ -99,7 +99,7 @@ class CronImageChapterMangaById extends Command
             for($j = $IDChapterFirst; $j <= $IDChapterEnd ; $j++){
                 $TotalHit = $hit++;
                 $param = [
-                    'id' => $j,
+                    'id_chapter' => $j,
                 ];
                 $ChapterManga = MainModel::getDataChapterManga($param);
                 // dd($ChapterManga);

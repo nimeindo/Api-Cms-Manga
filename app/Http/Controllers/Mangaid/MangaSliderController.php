@@ -22,13 +22,13 @@ use App\Helpers\V1\ResponseConnected as ResponseConnected;
 use App\Models\V1\MainModel as MainModel;
 use App\Models\V1\Mongo\MainModelMongo as MainModelMongo;
 
-class MangaTopController extends Controller
+class MangaSliderController extends Controller
 {
     function __construct(){
         $this->mongo = Config::get('mongo');
     }
 
-    public function generateTopDetailManga(Request $request = NULL, $params = NULL){
+    public function generateSliderDetailManga(Request $request = NULL, $params = NULL){
         $param = $params; # get param dari populartopiclist atau dari cron
         if(is_null($params)) $param = $request->all();
         
@@ -36,6 +36,7 @@ class MangaTopController extends Controller
         $idListManga = (isset($param['params']['id_list_manga']) ? $param['params']['id_list_manga'] : NULL);
         $code = (isset($param['params']['code']) ? $param['params']['code'] : '');
         $slug = (isset($param['params']['slug']) ? $param['params']['slug'] : '');
+        $nameImage = (isset($param['params']['name_image']) ? $param['params']['name_image'] : '');
         $title = (isset($param['params']['title']) ? $param['params']['title'] : '');
         $startDate = (isset($param['params']['start_date']) ? $param['params']['start_date'] : NULL);
         $endDate = (isset($param['params']['end_date']) ? $param['params']['end_date'] : NULL);
@@ -66,7 +67,6 @@ class MangaTopController extends Controller
                     'id_detail_manga' => $valueDetailManga['id']
                 ];
                 
-                
                 $MappingMongo = array(
                     'id_auto' => $valueDetailManga['id'].'-detailManga',
                     'id_list_manga' => $valueDetailManga['id_list_manga'],
@@ -77,7 +77,7 @@ class MangaTopController extends Controller
                     'slug' => $valueDetailManga['slug'],
                     'type' => $valueDetailManga['tipe'],
                     'synopsis' => $valueDetailManga['synopsis'],
-                    'image' => $valueDetailManga['image'],
+                    'image_asset' => $nameImage,
                     'status' => $valueDetailManga['status'],
                     'rating' => $valueDetailManga['rating'],
                     'author' => $valueDetailManga['author'],
@@ -90,7 +90,7 @@ class MangaTopController extends Controller
                     'cron_at' => $valueDetailManga['cron_at']
                 );
                 
-                $updateMongo = MainModelMongo::updateTopDetailListManga($MappingMongo, $this->mongo['use_collection_recomendation_manga'], $conditions, TRUE);
+                $updateMongo = MainModelMongo::updateSliderDetailListManga($MappingMongo, $this->mongo['use_collection_slider_manga'], $conditions, TRUE);
                 
                 $status = 400;
                 $message = '';
@@ -142,7 +142,7 @@ class MangaTopController extends Controller
     
     }
 
-    public function unPublishTopDetailManga(Request $request = NULL, $params = NULL){
+    public function unPublishSliderDetailManga(Request $request = NULL, $params = NULL){
         $param = $params; # get param dari populartopiclist atau dari cron
         if(is_null($params)) $param = $request->all();
         
@@ -158,7 +158,7 @@ class MangaTopController extends Controller
         ];
 
         #Get Data Mongo
-        $detailManga = MainModelMongo::getDataTopDetailListManga($parameter);
+        $detailManga = MainModelMongo::getDataSliderDetailListManga($parameter);
 
         $status = 400;
         $message = 'data tidak ditemukan';
@@ -168,7 +168,7 @@ class MangaTopController extends Controller
                 $dataUnpublish = $detailMangaV['id_auto'].'-'.$detailMangaV['slug'];
             }
 
-            $delete = MainModelMongo::deleteData($this->mongo['use_collection_detail_top_manga'], $parameter);
+            $delete = MainModelMongo::deleteData($this->mongo['use_collection_slider_manga'], $parameter);
 
             if($delete['status'] == 200){
 

@@ -60,8 +60,9 @@ class CronListMangaGenerateByDateMG extends Command
         #get file log last date generate
         if(file_exists($filename)) $content = file_get_contents($filename);
         if($isUpdate){
+            $Jam =env('TIME_ISUPDATE_MONGO', '1');
             $date = date('Y-m-d H:i:s');
-            $starTimestamp = strtotime($date.'-'.'1 hours');
+            $starTimestamp = strtotime($date.'-'.$Jam.' hours');
             $startDate = date('Y-m-d H:i:s', $starTimestamp);
             $EndDate = '';
         }

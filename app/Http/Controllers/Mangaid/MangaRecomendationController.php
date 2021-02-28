@@ -65,16 +65,6 @@ class MangaRecomendationController extends Controller
                 $param = [
                     'id_detail_manga' => $valueDetailManga['id']
                 ];
-                $ListChapterInDetail = MainModel::getDataChapterManga($param);
-                $dataChp = [];
-                foreach($ListChapterInDetail as $ListChapter){
-                    $dataChp[] = array(
-                        'id_chapter' => $ListChapter['id'],
-                        'slug_chapter' => $ListChapter['slug'],
-                        'chapter' => $ListChapter['chapter'],
-                        'date_publish' => $ListChapter['date_publish'],
-                    );
-                }
                 
                 $MappingMongo = array(
                     'id_auto' => $valueDetailManga['id'].'-detailManga',
@@ -86,10 +76,8 @@ class MangaRecomendationController extends Controller
                     'slug' => $valueDetailManga['slug'],
                     'type' => $valueDetailManga['tipe'],
                     'synopsis' => $valueDetailManga['synopsis'],
-                    'chapter' => $dataChp,
                     'image' => $valueDetailManga['image'],
                     'status' => $valueDetailManga['status'],
-                    'chapter_total' => count($dataChp),
                     'rating' => $valueDetailManga['rating'],
                     'author' => $valueDetailManga['author'],
                     'release_date' => $valueDetailManga['release_date'],

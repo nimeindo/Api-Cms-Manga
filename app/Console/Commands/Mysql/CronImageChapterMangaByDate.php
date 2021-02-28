@@ -61,8 +61,9 @@ class CronImageChapterMangaByDate extends Command
         if(file_exists($filename)) $content = file_get_contents($filename);
 
         if($isUpdate){
+            $Jam = env('TIME_ISUPDATE_MYSQL', '1');
             $date = date('Y-m-d H:i:s');
-            $newtimestamp = strtotime($date.'-'.'3 hours');
+            $newtimestamp = strtotime($date.'-'.$Jam.' hours');
             $startDate = date('Y-m-d H:i:s', $newtimestamp);
             $EndDate = '';
         }
@@ -73,6 +74,7 @@ class CronImageChapterMangaByDate extends Command
             'start_date' => $startDate,
             'end_date' => $EndDate
         ];
+        
         $ChapterManga = MainModel::getDataChapterManga($param);
         
         $status = "Complete";
@@ -88,6 +90,7 @@ class CronImageChapterMangaByDate extends Command
             ];
             try{
                 $data = $this->ImageChapterMangaController->ImageChapterMangaScrap(NULL,$listDataChapter);
+                
                 echo json_encode($data)."\n\n";
                 $i++;
             }catch(\Exception $e){

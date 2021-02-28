@@ -11,7 +11,7 @@ use \GuzzleHttp\Cookie\FileCookieJar;
 use \GuzzleHttp\Psr7;
 use \Carbon\Carbon;
 use Illuminate\Support\Str;
-use Config; 
+use Config;
 use Throwable;
 
 #Load Helper V1
@@ -63,7 +63,7 @@ class DetailMangaController extends Controller
             $SubImage = $crawler->filter('.row > .col-sm-3 > .boxed')->each(function ($node,$i) {
                 $image = $node->filter('img')->attr('src');
                 return $image;
-                
+
             });
 
             $SubDetail = $crawler->filter('.row > .col-sm-9 > .dl-horizontal')->each(function ($node,$i) {
@@ -77,7 +77,7 @@ class DetailMangaController extends Controller
                 });
                 $ListDetail = [];
                 for($i = 0; $i <count($subListDetail); $i++){
-                    
+
                     $ListDetail[str_replace(" ","",ucwords(str_replace('(s)','',$subListDetail[$i])))] = $subDetailValue[$i];
                 }
                 return $ListDetail;
@@ -86,8 +86,8 @@ class DetailMangaController extends Controller
             $SubDeskripsi = $crawler->filter('.row > .col-lg-12 > .well')->each(function ($node,$i) {
                 $Detail = $node->filter('p')->text('Default text content');
                 return $Detail;
-            }); 
-               
+            });
+
             // Get Chapter
             $SubChapter = $crawler->filter('.row > .col-lg-12 > .chapters > li')->each(function ($node,$i) {
                 $chapter = $node->filter('a')->text('Default text content');
@@ -101,7 +101,7 @@ class DetailMangaController extends Controller
                     'date' => trim($date)
                 ];
                 return $subchapter;
-            }); 
+            });
 
             $SubDetail = [
                 'Image' => $SubImage,
@@ -112,7 +112,7 @@ class DetailMangaController extends Controller
             // dd($SubDetail['Chapter']);
             if($SubChapter){
                 {//Get Detail
-                    
+
                     $deskripsi = isset($SubDetail['Deskripsi'][0]) ? Converter::__normalizeSummary($SubDetail['Deskripsi'][0]) : '';
                     $image = isset($SubDetail['Image'][0]) ? ($SubDetail['Image'][0]) : '';
                     $tipe = isset($SubDetail['ListDetail'][0]['Type']) ? trim($SubDetail['ListDetail'][0]['Type']) : '';
@@ -134,15 +134,15 @@ class DetailMangaController extends Controller
                             $authors .= $author[$i].'|';
                         }
                     }
-                    
-                    
+
+
                     $genre = Converter::__normalizeSummary($categorie);
                     $slugDetail = Str::slug(substr($DETAIL_HREF, strrpos($DETAIL_HREF, 'manga/' )+6));
                     $title      = str_replace('-',' ',ucwords($slugDetail));
                     $codeDetail = md5($slugDetail);
                     $paramCodeDetail['code'] = $codeDetail;
                     $paramCodeListManga['code'] = $codeDetail;
-                    $NameIndexVal = substr($title, 0,1); 
+                    $NameIndexVal = substr($title, 0,1);
                     $NameIndexVal = !ctype_alpha($NameIndexVal) ? '##' : '#'.strtoupper($NameIndexVal);
 
                     {#save to listManga cek jika list manga tidak ada maka akan di tambahkan
@@ -159,12 +159,12 @@ class DetailMangaController extends Controller
                                     'cron_at' => Carbon::now()->format('Y-m-d H:i:s')
                                 ];
                                 $LogSave [] = "Data Save - ".$title;
-                                $save = MainModel::insertListMangaMysql($paramInput);   
+                                $save = MainModel::insertListMangaMysql($paramInput);
                             }
                         }
                         $listManga = MainModel::getDataListManga($paramCodeListManga);
                         $idListManga = (empty($listManga)) ? 0 : $listManga[0]['id'];
-                    }# end save to listManga 
+                    }# end save to listManga
 
                     {#save to Detail Manga
                         $checkExist = MainModel::getDataDetailManga($paramCodeDetail);
@@ -188,7 +188,7 @@ class DetailMangaController extends Controller
                                 'synopsis' => $deskripsi,
                                 'cron_at' => Carbon::now()->format('Y-m-d H:i:s')
                             );
-                            
+
                             $save = MainModel::insertDetailMangaMysql($Input);
                             $detailManga = MainModel::getDataDetailManga($paramCodeDetail);
                             $idDetailManga = (empty($detailManga)) ? 0 : $detailManga[0]['id'];
@@ -196,7 +196,7 @@ class DetailMangaController extends Controller
                                 $LogSave = $this->saveChapter($SubDetail,$idDetailManga,$idListManga);
                             }else{
                                 $LogSave = 'Tidak ada Chapter Yang di simpan hanya data detail yang di simpan';
-                            }                    
+                            }
                         }else{
                             $conditions['id'] = $checkExist[0]['id'];
                             $Update = array(
@@ -225,7 +225,7 @@ class DetailMangaController extends Controller
                                 $LogSave = $this->saveChapter($SubDetail,$idDetailManga,$idListManga);
                             }else{
                                 $LogSave = 'Tidak ada Chapter Yang di simpan hanya data detail yang di simpan';
-                            } 
+                            }
                         }
                     }#end save detail manga
                 }
@@ -238,7 +238,7 @@ class DetailMangaController extends Controller
             return ResponseConnected::PageNotFound("Detail Manga","Page Not Found.", $awal);
         }
     }
-    
+
     public static function saveChapter($SubDetail,$idDetailManga,$idListManga){
         {//Get chapter
             foreach($SubDetail['Chapter']  as $valueChapter){
@@ -249,6 +249,7 @@ class DetailMangaController extends Controller
                 $datePublish = date('Y-m-d',strtotime($valueChapter['date']));
                 $paramIdListChapter['code'] = $codeChapter;
                 $checkExist = MainModel::getDataChapterManga($paramIdListChapter);
+
                 if(empty($checkExist)){
                     $Input = array(
                         'id_detail_manga' => $idDetailManga,
@@ -272,9 +273,9 @@ class DetailMangaController extends Controller
                         'chapter' => $chapter,
                         'date_publish' => $datePublish,
                         'chapter_href' => $href,
-                        'cron_at' => Carbon::now()->format('Y-m-d H:i:s')
+                        // 'cron_at' => Carbon::now()->format('Y-m-d H:i:s')
                     );
-                    
+
                     $LogSave [] =  "Data Update - ".$slugChapter;
                     $save = MainModel::updateChapterMangaMysql($Update,$conditions);
                 }
@@ -289,7 +290,7 @@ class DetailMangaController extends Controller
     public function generateDetailManga(Request $request = NULL, $params = NULL){
         $param = $params; # get param dari populartopiclist atau dari cron
         if(is_null($params)) $param = $request->all();
-        
+
         $id = (isset($param['params']['id_detail']) ? $param['params']['id_detail'] : NULL);
         $idListManga = (isset($param['params']['id_list_manga']) ? $param['params']['id_list_manga'] : NULL);
         $code = (isset($param['params']['code']) ? $param['params']['code'] : '');
@@ -298,8 +299,8 @@ class DetailMangaController extends Controller
         $startDate = (isset($param['params']['start_date']) ? $param['params']['start_date'] : NULL);
         $endDate = (isset($param['params']['end_date']) ? $param['params']['end_date'] : NULL);
         $isUpdated = (isset($param['params']['is_updated']) ? filter_var($param['params']['is_updated'], FILTER_VALIDATE_BOOLEAN) : FALSE);
-        
-        #jika pakai range date
+
+        #jika pakai log
         $showLog = (isset($param['params']['show_log']) ? $param['params']['show_log'] : FALSE);
         $parameter = [
             'id' => $id,
@@ -329,10 +330,16 @@ class DetailMangaController extends Controller
                         'id_chapter' => $ListChapter['id'],
                         'slug_chapter' => $ListChapter['slug'],
                         'chapter' => $ListChapter['chapter'],
+                        'page' => filter_var($ListChapter['chapter'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
                         'date_publish' => $ListChapter['date_publish'],
                     );
                 }
-                
+                // menyortir dari besar ke kecil
+                usort($dataChp, function($a, $b) {
+                    return $b['page'] <=> $a['page'];
+                });
+
+                // dd($dataChp);
                 $MappingMongo = array(
                     'id_auto' => $valueDetailManga['id'].'-detailManga',
                     'id_list_manga' => $valueDetailManga['id_list_manga'],
@@ -357,9 +364,9 @@ class DetailMangaController extends Controller
                     'meta_tags' => explode('-',$valueDetailManga['slug']),
                     'cron_at' => $valueDetailManga['cron_at']
                 );
-                
+
                 $updateMongo = MainModelMongo::updateDetailListManga($MappingMongo, $this->mongo['use_collection_detail_manga'], $conditions, TRUE);
-                
+
                 $status = 400;
                 $message = '';
                 $messageLocal = '';
@@ -390,9 +397,9 @@ class DetailMangaController extends Controller
                     echo $message.' | '.$prefixDate.' | '.$MappingMongo['id_auto'] .' => '.$slug.' | '.$messageLocal."\n";
 
                 }
-                
+
             }
-            
+
         }else{
             $status = 400;
             $message = 'data tidak ditemukan';
@@ -408,5 +415,5 @@ class DetailMangaController extends Controller
                 ->header('Content-Type', 'application/json');
         }
     }
-    
+
 }
